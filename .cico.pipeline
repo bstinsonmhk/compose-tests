@@ -31,18 +31,19 @@ node('fedora-qa'){
         stage('Pre Setup Node'){
             onmyduffynode 'yum -y install git ansible'
         }
-
+        /*
         stage('Build') {
 
-        //sh '''curl -sb -H "Accept: application/json" "https://kojipkgs.fedoraproject.org/compose/latest-Fedora-Modular-26/STATUS" | grep FINISHED'''
-        //def response = httpRequest 'https://kojipkgs.fedoraproject.org/compose/latest-Fedora-Modular-26/STATUS'
-        //println("Content: "+response.content)
-        //assert response.content == "FINISHED\n": "The Build status is not FINISHED, aborting."
+        sh '''curl -sb -H "Accept: application/json" "https://kojipkgs.fedoraproject.org/compose/latest-Fedora-Modular-26/STATUS" | grep FINISHED'''
+        def response = httpRequest 'https://kojipkgs.fedoraproject.org/compose/latest-Fedora-Modular-26/STATUS'
+        println("Content: "+response.content)
+        assert response.content == "FINISHED\n": "The Build status is not FINISHED, aborting."
 
         }
+        */
 
         stage('git clone Tests') {
-            onmyduffynode '''git clone "https://github.com/alexxa/compose_tester.git" && ls -la'''
+            onmyduffynode '''git clone "https://github.com/fedora-modularity/compose-tests.git"'''
         }
 
         stage('Setup Environment') {
@@ -65,19 +66,20 @@ node('fedora-qa'){
             ansible-playbook deploy.yaml --extra-vars "compose=jamesantill/boltron-27" --tags mini | tee output.log'''
         }
 
-        stage('Module Install') {
+        stage('Module Install ALL') {
             onmyduffynode '''cd compose_tester &&
             ansible-playbook deploy.yaml --extra-vars "compose=jamesantill/boltron-27" --tags modules_install | tee -a output.log'''
         }
 
+        /*
         stage('Module Update') {
             onmyduffynode '''cd compose_tester &&
-            //ansible-playbook deploy.yaml --extra-vars "compose=jamesantill/boltron-27" --tags modules_update | tee -a output.log'''
+            ansible-playbook deploy.yaml --extra-vars "compose=jamesantill/boltron-27" --tags modules_update | tee -a output.log'''
         }
-
-        stage('Create Errors Log') {
+        */
+        stage('Parse Logs') {
             onmyduffynode '''cd compose_tester &&
-            sed -n \'/^TASK/{ x; /failed:/p; d; }; /failed:/H; \\${ x; /failed:/p; }\' output.log >> error.log &&
+            failed_mod=$(sed -n \'/^TASK/{ x; /failed:/p; d; }; /failed:/H; \\${ x; /failed:/p; }\' output.log >> error.log &&
             bash tests/parse_output.sh tests/f27_modules.yaml >> mod_install_results.log
             '''
         }
@@ -88,6 +90,9 @@ node('fedora-qa'){
     } finally {
         try {
             stage('Archive the Logs'){
+                nmyduffynode '''
+                if [[ -s error.log ]]; then rm -rf error.log; else currentBuild.result = "FAILED"; fi
+                '''
                 syncfromduffynode('*.log')
                 archiveArtifacts('compose_tester/*.log')
             }

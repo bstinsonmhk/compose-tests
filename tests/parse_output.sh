@@ -11,7 +11,7 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
 	    error_msg=$(grep -e "(item=$line)" $failed_modules | grep -oP 'Error.{80}' )
 	    printf "%-30s =>  %-30s\n" "$line" "$error_msg"
 	else
-            printf  "%-30s =>  %-30s\n" "$line" "Failed with Nothing to do msg"
+            printf  "%-30s =>  %-30s\n" "$line" "exit code: 0. Nothing to do!"
 
 	fi
 done < "$1"
