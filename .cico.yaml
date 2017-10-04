@@ -29,6 +29,6 @@
     name: fedora-qa
     jobs:
         - '{ci_project}-{git_repo}':
-            git_username: alexxa
-            git_repo: compose_tester
+            git_username: fedora-modularity
+            git_repo: compose-tests
             ci_project: fedora-qa
